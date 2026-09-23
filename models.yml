@@ -68,3 +68,4 @@ Asistente:
     - nombre
     - correo
     - direccion
+  location_index: direccion_loc
