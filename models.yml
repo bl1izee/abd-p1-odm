@@ -2,7 +2,7 @@
 #
 # Por cada modelo se declara:
 #   required_vars    atributos que TIENEN que estar en cada documento
-#   admissible_vars  atributos válidos que no tienen por qué estar
+#   admissible_vars  atributos válidos que no tienen por qué estar en cada documento
 #   unique_indexes   índices con restricción de unicidad
 #   regular_indexes  índices ascendentes normales
 #   location_index   campo de dirección del que se derivará el punto GeoJSON
@@ -19,12 +19,52 @@ Recinto:
     - nombre
     - direccion
     - aforo
+    - zona
   admissible_vars:
-    - zonas
     - servicios
-    - direccion_loc
   unique_indexes:
-    - nombre
+    - direccion
   regular_indexes:
-    - aforo
-  location_index: direccion
+    - nombre
+  location_index: direccion_loc
+
+Artista:
+  required_vars:
+    - nombre
+    - genero
+  admissible_vars:
+    - age
+    - pais
+  unique_indexes: # ID
+  regular_indexes:
+   - genero
+   - nombre
+
+Evento:
+  required_vars:
+    - titulo
+    - recinto
+    - fecha_hora
+    - zona
+    - artistas
+  admissible_vars:
+    - entradas_vendidas
+  unique_indexes: # ID
+  regular_indexes:
+    - titulo
+    - artistas
+
+Asistente:
+  required_vars:
+    - nombre
+    - correo
+    - fecha
+    - direccion
+  admissible_vars:
+    - genero
+  unique_indexes:
+    - correo
+  regular_indexes:
+    - nombre
+    - correo
+    - direccion
