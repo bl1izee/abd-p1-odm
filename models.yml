@@ -14,6 +14,7 @@
 # Este fichero es un EJEMPLO con un solo modelo. Hay que sustituirlo por los
 # cuatro modelos de EnVivo: recinto, artista, evento y asistente.
 
+# Hemos integrado los atributos/vars obligatorio también en los admitidos, esto nos ayuda mas adelante en __init__ a realizar las comprobaciones
 Recinto:
   required_vars:
     - nombre
@@ -22,6 +23,10 @@ Recinto:
     - zona
   admissible_vars:
     - servicios
+    - nombre
+    - direccion
+    - aforo
+    - zona
   unique_indexes:
     - direccion
   regular_indexes:
@@ -35,6 +40,8 @@ Artista:
   admissible_vars:
     - age
     - pais
+    - nombre
+    - genero
   unique_indexes: # ID
   regular_indexes:
    - genero
@@ -49,6 +56,11 @@ Evento:
     - artistas
   admissible_vars:
     - entradas_vendidas
+    - titulo
+    - recinto
+    - fecha_hora
+    - zona
+    - artistas
   unique_indexes: # ID
   regular_indexes:
     - titulo
@@ -62,6 +74,10 @@ Asistente:
     - direccion
   admissible_vars:
     - genero
+    - nombre
+    - correo
+    - fecha
+    - direccion
   unique_indexes:
     - correo
   regular_indexes:

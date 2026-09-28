@@ -110,6 +110,14 @@ class Model:
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
 
+        # Comprueba lo sigueinte
+        # 1. "Todos los atributos que me han enviado están entre los atributos permitidos."
+        # 2. "¿Todos los atributos obligatorios están entre los atributos recibidos?"
+        if (not kwargs.keys().issubset(self._admissible_vars)) or \
+            (not self._required_vars.issubset(kwargs.keys())):
+            print("[-] Error en los atributos")
+            return
+
         # Asigna todos los valores en kwargs a las atributos con 
         # nombre las claves en kwargs
         # Utilizamos el atributo data para guardar los variables 
@@ -246,9 +254,20 @@ class Model:
         # TODO
         # Recorrer indexes y crear cada índice segun su tipo: 'unique', 'asc'
         # y 'geosphere'. Comparar el tipo por igualdad, no con el operador 'in'.
+        # 
+        # Preguntar al profesor de que va esto.
         # Ojo con el índice geoespacial: save() guarda el GeoJSON Point en
         # <campo>_loc, luego el índice 2dsphere va sobre <campo>_loc, mientras
         # que _location_var debe guardar el nombre del campo base.
+
+        for key, value in indexes.items():
+            if value == "unique":
+                cls._db.create_index([(key, 1)], unique=True)
+            elif value == "asc":
+                cls._db.create_index([(key, 1)])
+            elif value == "geosphere":
+                cls._db.create_index([(key, pymongo.GEOSPHERE)])
+                cls._location_var = key
 
 
 class ModelCursor:
