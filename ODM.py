@@ -113,8 +113,8 @@ class Model:
         # Comprueba lo sigueinte
         # 1. "Todos los atributos que me han enviado están entre los atributos permitidos."
         # 2. "¿Todos los atributos obligatorios están entre los atributos recibidos?"
-        if (not kwargs.keys().issubset(self._admissible_vars)) or \
-            (not self._required_vars.issubset(kwargs.keys())):
+        if (not set(kwargs).issubset(self._admissible_vars)) or \
+            (not self._required_vars.issubset(kwargs)):
             print("[-] Error en los atributos")
             return
 
@@ -137,6 +137,8 @@ class Model:
         #TODO
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
+        if name not in self._data:
+            print("[-] ERROR en __setattr__, no existe el atributo en la instancia")
 
         # Asigna el valor value a la variable name
         self._data[name] = value
@@ -162,14 +164,22 @@ class Model:
         modelo.
         """
         #TODO
-        pass #No olvidar eliminar esta linea una vez implementado
+        if "key" not in self._data:
+            self._db.insert_one(self._data)
+        else:
+            self._db.update_one(
+                {"_id": self._data["id"]},
+                {"$set": self._data}
+            )
+
+
 
     def delete(self) -> None:
         """
         Elimina el modelo de la base de datos
         """
         #TODO
-        self._db.delete_one({"_id":self._data["id"]})
+        self._db.delete_one({"_id":self._data["_id"]})
     
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
@@ -251,6 +261,9 @@ class Model:
             admissible_vars : set[str] 
                 Set de atributos admitidos por el modelo
         """
+        # Añadimos un ID a las variables admitidas, esto nos permitirá en save saber si existe el documento en la base de datos
+        admissible_vars.add("id")
+
         cls._db = db_collection
         cls._required_vars = required_vars
         cls._admissible_vars = admissible_vars
@@ -387,26 +400,46 @@ if __name__ == '__main__':
     # Inicializar base de datos y modelos con initApp
     #TODO
     initApp()
-
+    '''
     #Ejemplo
-    m = MiModelo(nombre="Pablo", apellido="Ramos", edad=18)
+    m = Asistente(
+        nombre="Pablo", 
+        correo="pablo.mmartin@gmail.com", 
+        fecha='16/10/2006', 
+        dirección="av.mallorca, 25"
+        )
     m.save()
     m.nombre="Pedro"
     print(m.nombre)
-
+    '''
     # Hacer pruebas para comprobar que funciona correctamente el modelo
     #TODO
     # Crear modelo
+    r = Recinto(
+    nombre="Recinto1",
+    direccion="Calle avenida",
+    aforo=6700,
+    zona={
+        "A": 6000,
+        "B": 700
+    }
+    )
+
 
     # Asignar nuevo valor a variable admitida del objeto 
+    r.direccion = "Calle avenida 2"
 
     # Asignar nuevo valor a variable no admitida del objeto 
+    r.color = "Rojo"
 
     # Guardar
+    r.save()
 
     # Asignar nuevo valor a variable admitida del objeto
+    r.aforo = "7000"
 
     # Guardar
+    r.save()
 
     # Buscar nuevo documento con find
 
