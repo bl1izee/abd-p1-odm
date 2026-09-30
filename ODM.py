@@ -114,7 +114,7 @@ class Model:
         # 1. "Todos los atributos que me han enviado están entre los atributos permitidos."
         # 2. "¿Todos los atributos obligatorios están entre los atributos recibidos?"
         if (not set(kwargs).issubset(self._admissible_vars)) or \
-            (not self._required_vars.issubset(kwargs)):
+            (not self._required_vars.issubset(set(kwargs))):
             print("[-] Error en los atributos")
             return
 
@@ -138,7 +138,7 @@ class Model:
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
         if name not in self._data:
-            print("[-] ERROR en __setattr__, no existe el atributo en la instancia")
+            raise AttributeError(f"El atributo '{name}' no existe en el modelo")
 
         # Asigna el valor value a la variable name
         self._data[name] = value
@@ -164,11 +164,11 @@ class Model:
         modelo.
         """
         #TODO
-        if "key" not in self._data:
+        if "_id" not in self._data:
             self._db.insert_one(self._data)
         else:
             self._db.update_one(
-                {"_id": self._data["id"]},
+                {"_id": self._data["_id"]},
                 {"$set": self._data}
             )
 
@@ -262,7 +262,7 @@ class Model:
                 Set de atributos admitidos por el modelo
         """
         # Añadimos un ID a las variables admitidas, esto nos permitirá en save saber si existe el documento en la base de datos
-        admissible_vars.add("id")
+        admissible_vars.add("_id")
 
         cls._db = db_collection
         cls._required_vars = required_vars
@@ -416,13 +416,13 @@ if __name__ == '__main__':
     #TODO
     # Crear modelo
     r = Recinto(
-    nombre="Recinto1",
-    direccion="Calle avenida",
-    aforo=6700,
-    zona={
-        "A": 6000,
-        "B": 700
-    }
+        nombre="Recinto1",
+        direccion="Calle avenida",
+        aforo=6700,
+        zona={
+            "A": 6000,
+            "B": 700
+        }
     )
 
 
@@ -430,7 +430,10 @@ if __name__ == '__main__':
     r.direccion = "Calle avenida 2"
 
     # Asignar nuevo valor a variable no admitida del objeto 
-    r.color = "Rojo"
+    try:
+        r.color = "Rojo"
+    except AttributeError:
+        print("[+] Atributo no admitido")
 
     # Guardar
     r.save()
