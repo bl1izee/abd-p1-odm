@@ -334,9 +334,8 @@ class ModelCursor:
         #TODO
         #No olvidar eliminar esta linea una vez implementado
 
-        for doc in self.cursor:
-            yield self.model(**doc)
-
+        while self.cursor.alive: # Mientras tenga documentos pendientes
+            yield self.model(**next(self.cursor)) # ** lo pasa como kwargs al modelo
 
 def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
     """ 
@@ -452,11 +451,7 @@ if __name__ == '__main__':
 
     # Obtener primer documento
     r = next(iter(documento), None)
-
-    if r is None:
-        print("No se ha encontrado nada")
-    else:
-        print(f"{r.nombre} - aforo={r.aforo}")
+    print(f"{r.nombre} - aforo={r.aforo}")
 
     # Modificar valor de variable admitida
     r.aforo = 8000
