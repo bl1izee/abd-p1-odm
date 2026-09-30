@@ -137,6 +137,13 @@ class Model:
         #TODO
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
+        if name in self._data:
+            self._db.update_one(
+                {"_id": self._data["id"]},
+                {"$set": {name: value}}
+            )
+        else:
+            print("[-] ERROR en __setattr__, no existe el atributo en la instancia")
 
         # Asigna el valor value a la variable name
         self._data[name] = value
@@ -162,9 +169,15 @@ class Model:
         modelo.
         """
         #TODO
-        if self.
+        if not self._data["id"]:
+            self._db.insert_one(self._data)
         else:
-                    print("[-] No se ha encontrado la clase de la instancia")
+            self._db.update_one(
+                {"_id": self._data["id"]},
+                {"$set": self._data}
+            )
+
+
 
     def delete(self) -> None:
         """
@@ -391,7 +404,12 @@ if __name__ == '__main__':
     initApp()
 
     #Ejemplo
-    m = MiModelo(nombre="Pablo", apellido="Ramos", edad=18)
+    m = Asistente(
+        nombre="Pablo", 
+        correo="pablo.mmartin@gmail.com", 
+        fecha='16/10/2006', 
+        dirección="av.mallorca, 25"
+        )
     m.save()
     m.nombre="Pedro"
     print(m.nombre)
