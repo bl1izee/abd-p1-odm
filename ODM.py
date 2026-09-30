@@ -189,7 +189,10 @@ class Model:
         """ 
         #TODO
         # cls es el puntero a la clase
-        pass #No olvidar eliminar esta linea una vez implementado
+        #No olvidar eliminar esta linea una vez implementado
+
+        # Uso el find de pymongo sobre la coleccion filtro
+        return ModelCursor(cls, cls._db.find(filter))
 
     @classmethod
     def aggregate(cls, pipeline: list[dict]) -> pymongo.command_cursor.CommandCursor:
