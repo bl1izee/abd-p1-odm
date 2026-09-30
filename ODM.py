@@ -153,7 +153,6 @@ class Model:
         except KeyError:
             raise AttributeError
 
-    # test pablo
     def save(self) -> None:
         """
         Guarda el modelo en la base de datos
@@ -171,8 +170,6 @@ class Model:
         """
         #TODO
         pass
-
-    #hola
     
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
