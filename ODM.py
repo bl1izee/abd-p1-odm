@@ -162,7 +162,9 @@ class Model:
         modelo.
         """
         #TODO
-        pass #No olvidar eliminar esta linea una vez implementado
+        if self.
+        else:
+                    print("[-] No se ha encontrado la clase de la instancia")
 
     def delete(self) -> None:
         """
@@ -248,6 +250,9 @@ class Model:
             admissible_vars : set[str] 
                 Set de atributos admitidos por el modelo
         """
+        # Añadimos un ID a las variables admitidas, esto nos permitirá en save saber si existe el documento en la base de datos
+        admissible_vars.add("id")
+
         cls._db = db_collection
         cls._required_vars = required_vars
         cls._admissible_vars = admissible_vars
