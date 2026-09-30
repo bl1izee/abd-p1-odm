@@ -172,7 +172,7 @@ class Model:
         #TODO
         pass
 
-    # test hugo
+    # test W pogu
     
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
