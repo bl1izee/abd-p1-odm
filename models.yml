@@ -38,10 +38,10 @@ Artista:
     - nombre
     - genero
   admissible_vars:
-    - age
+    - age # año de inicio
     - pais
     - nombre
-    - genero
+    - genero # genero musical
   unique_indexes: # ID
   regular_indexes:
    - genero
@@ -59,7 +59,7 @@ Evento:
     - titulo
     - recinto
     - fecha_hora
-    - zona
+    - precio_zona
     - artistas
   unique_indexes: # ID
   regular_indexes:
