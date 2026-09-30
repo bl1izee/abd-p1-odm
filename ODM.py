@@ -111,12 +111,12 @@ class Model:
         # antes de la asignacion.
 
         # Comprueba lo sigueinte
-        # 1. "Todos los atributos que me han enviado están entre los atributos permitidos."
+        # 1. "Todos los atributos que me han enviado están entre los atributos permitidos + obligatorios."
         # 2. "¿Todos los atributos obligatorios están entre los atributos recibidos?"
-        if (not set(kwargs).issubset(self._admissible_vars)) or \
+
+        if (not self._admissible_vars.union(self._required_vars)) or \
             (not self._required_vars.issubset(set(kwargs))):
-            print("[-] Error en los atributos")
-            return
+            raise AttributeError("[-] Los atributos ingresados no son compatible con el modelo")
 
         # Asigna todos los valores en kwargs a las atributos con 
         # nombre las claves en kwargs
@@ -137,8 +137,9 @@ class Model:
         #TODO
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
-        if name not in self._data:
-            raise AttributeError(f"El atributo '{name}' no existe en el modelo")
+        # Comprobamos que el atributo 'name' esté entre los atributos admisibles y obligatorios del modelo
+        if name not in self._admissible_vars.union(self._required_vars):
+            return
 
         # Asigna el valor value a la variable name
         self._data[name] = value
@@ -165,7 +166,9 @@ class Model:
         """
         #TODO
         if "_id" not in self._data:
-            self._db.insert_one(self._data)
+            # MongoDB generará un _id automáticamente, lo guardamos para poder usarlo después
+            id_mongo = self._db.insert_one(self._data)
+            self._data["_id"] = id_mongo.inserted_id
         else:
             self._db.update_one(
                 {"_id": self._data["_id"]},
@@ -329,8 +332,10 @@ class ModelCursor:
         Utilizar alive para comprobar si existen mas documentos.
         """
         #TODO
-        pass #No olvidar eliminar esta linea una vez implementado
+        #No olvidar eliminar esta linea una vez implementado
 
+        while self.cursor.alive: # Mientras tenga documentos pendientes
+            yield self.model(**next(self.cursor)) # ** lo pasa como kwargs al modelo
 
 def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
     """ 
@@ -430,10 +435,7 @@ if __name__ == '__main__':
     r.direccion = "Calle avenida 2"
 
     # Asignar nuevo valor a variable no admitida del objeto 
-    try:
-        r.color = "Rojo"
-    except AttributeError:
-        print("[+] Atributo no admitido")
+    r.color = "Rojo"
 
     # Guardar
     r.save()
@@ -445,9 +447,14 @@ if __name__ == '__main__':
     r.save()
 
     # Buscar nuevo documento con find
+    documento = Recinto.find({"nombre": "Recinto1"})
 
     # Obtener primer documento
+    r = next(iter(documento), None)
+    print(f"{r.nombre} - aforo={r.aforo}")
 
     # Modificar valor de variable admitida
+    r.aforo = 8000
 
     # Guardar
+    r.save()
