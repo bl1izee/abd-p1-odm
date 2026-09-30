@@ -332,7 +332,10 @@ class ModelCursor:
         Utilizar alive para comprobar si existen mas documentos.
         """
         #TODO
-        pass #No olvidar eliminar esta linea una vez implementado
+        #No olvidar eliminar esta linea una vez implementado
+
+        for doc in self.cursor:
+            yield self.model(**doc)
 
 
 def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
@@ -445,9 +448,18 @@ if __name__ == '__main__':
     r.save()
 
     # Buscar nuevo documento con find
+    documento = Recinto.find({"nombre": "Recinto1"})
 
     # Obtener primer documento
+    r = next(iter(documento), None)
+
+    if r is None:
+        print("No se ha encontrado nada")
+    else:
+        print(f"{r.nombre} - aforo={r.aforo}")
 
     # Modificar valor de variable admitida
+    r.aforo = 8000
 
     # Guardar
+    r.save()
