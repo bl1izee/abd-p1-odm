@@ -206,7 +206,7 @@ class Model:
         # cls es el puntero a la clase
         #No olvidar eliminar esta linea una vez implementado
 
-        # Uso el find de pymongo sobre la coleccion filtro
+        # Uso el find de pymongo con el filtro
         return ModelCursor(cls, cls._db.find(filter))
 
     @classmethod
