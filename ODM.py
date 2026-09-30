@@ -179,7 +179,7 @@ class Model:
         Elimina el modelo de la base de datos
         """
         #TODO
-        self._db.delete_one({"_id":self._data["id"]})
+        self._db.delete_one({"_id":self._data["_id"]})
     
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
