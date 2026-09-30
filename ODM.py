@@ -111,12 +111,12 @@ class Model:
         # antes de la asignacion.
 
         # Comprueba lo sigueinte
-        # 1. "Todos los atributos que me han enviado están entre los atributos permitidos."
+        # 1. "Todos los atributos que me han enviado están entre los atributos permitidos + obligatorios."
         # 2. "¿Todos los atributos obligatorios están entre los atributos recibidos?"
-        if (not set(kwargs).issubset(self._admissible_vars)) or \
+
+        if (not self._admissible_vars.union(self._required_vars)) or \
             (not self._required_vars.issubset(set(kwargs))):
-            print("[-] Error en los atributos")
-            return
+            raise AttributeError("[-] Los atributos ingresados no son compatible con el modelo")
 
         # Asigna todos los valores en kwargs a las atributos con 
         # nombre las claves en kwargs
@@ -165,7 +165,9 @@ class Model:
         """
         #TODO
         if "_id" not in self._data:
-            self._db.insert_one(self._data)
+            # MongoDB generará un _id automáticamente, lo guardamos para poder usarlo después
+            id_mongo = self._db.insert_one(self._data)
+            self._data["_id"] = id_mongo.inserted_id
         else:
             self._db.update_one(
                 {"_id": self._data["_id"]},
