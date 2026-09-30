@@ -169,7 +169,7 @@ class Model:
         Elimina el modelo de la base de datos
         """
         #TODO
-        pass
+        self._db.delete_one({"_id":self._data["id"]})
     
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
@@ -191,7 +191,7 @@ class Model:
         # cls es el puntero a la clase
         #No olvidar eliminar esta linea una vez implementado
 
-        # Uso el find de pymongo sobre la coleccion filtro
+        # Uso el find de pymongo con el filtro
         return ModelCursor(cls, cls._db.find(filter))
 
     @classmethod
