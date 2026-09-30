@@ -137,8 +137,9 @@ class Model:
         #TODO
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
-        if name not in self._data:
-            raise AttributeError(f"El atributo '{name}' no existe en el modelo")
+        # Comprobamos que el atributo 'name' esté entre los atributos admisibles y obligatorios del modelo
+        if name not in self._admissible_vars.union(self._required_vars):
+            return
 
         # Asigna el valor value a la variable name
         self._data[name] = value
@@ -181,7 +182,7 @@ class Model:
         Elimina el modelo de la base de datos
         """
         #TODO
-        self._db.delete_one({"_id":self._data["id"]})
+        self._db.delete_one({"_id":self._data["_id"]})
     
     @classmethod
     def find(cls, filter: dict[str, str | dict]) -> Any:
@@ -432,10 +433,7 @@ if __name__ == '__main__':
     r.direccion = "Calle avenida 2"
 
     # Asignar nuevo valor a variable no admitida del objeto 
-    try:
-        r.color = "Rojo"
-    except AttributeError:
-        print("[+] Atributo no admitido")
+    r.color = "Rojo"
 
     # Guardar
     r.save()
