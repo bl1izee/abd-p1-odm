@@ -387,26 +387,37 @@ if __name__ == '__main__':
     # Inicializar base de datos y modelos con initApp
     #TODO
     initApp()
-
+    '''
     #Ejemplo
     m = MiModelo(nombre="Pablo", apellido="Ramos", edad=18)
     m.save()
     m.nombre="Pedro"
     print(m.nombre)
-
+    '''
     # Hacer pruebas para comprobar que funciona correctamente el modelo
     #TODO
     # Crear modelo
+    r = Recinto(
+        nombre="Recinto1",
+        direccion="Calle avenida",
+        aforo=6700,
+        zona={"A": 6000, "B": 700}
+    )
 
     # Asignar nuevo valor a variable admitida del objeto 
+    r.direccion = "Calle avenida 2"
 
     # Asignar nuevo valor a variable no admitida del objeto 
+    r.color = "Rojo"
 
     # Guardar
+    r.save()
 
     # Asignar nuevo valor a variable admitida del objeto
+    r.aforo = "7000"
 
     # Guardar
+    r.save()
 
     # Buscar nuevo documento con find
 
