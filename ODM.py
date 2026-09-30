@@ -336,17 +336,48 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
     #TODO
     # Inicializar base de datos
 
+    client = MongoClient(mongodb_uri) #Conectar al servidor local
+    db = client[db_name] # Inicializo la base de datos
+
     #TODO
     # Declarar tantas clases modelo colecciones existan en la base de datos
     # Leer el fichero de definiciones de modelos para obtener las colecciones,
     # indices y los atributos admitidos y requeridos para cada una de ellas.
     # Ejemplo de declaracion de modelo para colecion llamada MiModelo
-    scope["MiModelo"] = type("MiModelo", (Model,),{})
+    #  scope["MiModelo"] = type("MiModelo", (Model,),{})
     # La clase se declara en tiempo de ejecucion y queda en scope, que no tiene
     # por que ser el espacio de nombres global: las pruebas le pasan su propio
     # diccionario. Por eso se inicializa a traves de scope y no por su nombre,
     # que ahi todavia no existe.
-    scope["MiModelo"].init_class(db_collection=None, indexes=None, required_vars=None, admissible_vars=None)
+    #  scope["MiModelo"].init_class(db_collection=None, indexes=None, required_vars=None, admissible_vars=None)
+     
+    with open(definitions_path, "r") as fichero: #Lee el fichero
+        diccionario = yaml.safe_load(fichero) # Lo combierto a dict
+
+    for clave, valor in diccionario.items(): # Bucle que recorre el fichero
+
+        scope[clave] = type(clave, (Model,), {}) # Declaracion del modelo
+
+        # Diccionario de indices.
+        indices: dict[str, str] = {}
+
+        for val in valor.get("unique_indexes") or []: # Evita errores en caso vacio
+            indices[val] = "unique"
+
+        for val in valor.get("regular_indexes") or []:
+            indices[val] = "asc"
+
+        direccion = valor.get("location_index")
+        if direccion:
+            indices[direccion] = "geosphere"
+
+        # Inicializa la clase
+        scope[clave].init_class(
+            db_collection=db[clave],
+            indexes=indices,
+            required_vars=set(valor["required_vars"]),
+            admissible_vars=set(valor["admissible_vars"])
+        )
 
 if __name__ == '__main__':
     
