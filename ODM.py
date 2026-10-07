@@ -38,7 +38,7 @@ def getLocationPoint(address: str) -> Point:
             #TODO
             # Es necesario proporcionar un user_agent para utilizar la API
             # Utilizar un nombre aleatorio para el user_agent
-            location = Nominatim(user_agent="compis").geocode(address) # location vale None si no se ha encontrado la dirección, en caso contrario, valdrá un objeto de geopy
+            location = Nominatim(user_agent="asdfasdfasdf").geocode(address) # location vale None si no se ha encontrado la dirección, en caso contrario, valdrá un objeto de geopy
         except GeocoderTimedOut:
             # Puede lanzar una excepcion si se supera el tiempo de espera
             # Volver a intentarlo
@@ -112,6 +112,9 @@ class Model:
             kwargs : dict[str, str | dict]
                 diccionario con los valores de las atributos del modelo
         """
+        # Creamos el atributo privado que guarda los atributos modificados
+        self._modified_vars = set()
+
         self._data: dict[str, str | dict | list] = {}
         #TODO
         # Realizar las comprabociones y gestiones necesarias
@@ -120,7 +123,7 @@ class Model:
         # Comprueba lo sigueinte
         # 1. "Todos los atributos que me han enviado están entre los atributos permitidos + obligatorios."
         # 2. "¿Todos los atributos obligatorios están entre los atributos recibidos?"
-
+        
         if (not set(kwargs).issubset(self._admissible_vars.union(self._required_vars))) or \
             (not self._required_vars.issubset(set(kwargs))):
             raise AttributeError("[-] Los atributos ingresados no son compatible con el modelo")
@@ -144,9 +147,14 @@ class Model:
         #TODO
         # Realizar las comprabociones y gestiones necesarias
         # antes de la asignacion.
+        # Comprobamos que name sea una variable interna
+    
         # Comprobamos que el atributo 'name' esté entre los atributos admisibles y obligatorios del modelo
         if name not in self._admissible_vars.union(self._required_vars):
             return
+
+        # Guardamos la variable que ha sido modificada  
+        self._modified_vars.add(name)
 
         # Asigna el valor value a la variable name
         self._data[name] = value
@@ -173,14 +181,32 @@ class Model:
         """
         #TODO
         if "_id" not in self._data:
+
+            # Comprobamos que location var exista y que el usuario haya guardado una localización
+            if (self._location_var in self._data) and self._location_var is not None:
+                self._data[f"{self._location_var}_loc"] = getLocationPoint(self._data[self._location_var])
+
             # MongoDB generará un _id automáticamente, lo guardamos para poder usarlo después
             id_mongo = self._db.insert_one(self._data)
             self._data["_id"] = id_mongo.inserted_id
         else:
+            # Es un documento que ya existe
+            cambios = {}
+
+            for variable in self._modified_vars:
+                cambios[variable] = self._data[variable]
+
+            # Comprobamos que location var exista y que el usuario haya guardado una localización
+            if (self._location_var in self._data) and (self._location_var in cambios):
+                cambios[f"{self._location_var}_loc"] = getLocationPoint(self._data[self._location_var])
+
             self._db.update_one(
                 {"_id": self._data["_id"]},
-                {"$set": self._data}
+                {"$set": cambios}
             )
+
+        # Ya hemos guardado los cambios
+        self._modified_vars.clear()
 
 
 
@@ -292,8 +318,9 @@ class Model:
             elif value == "asc":
                 cls._db.create_index([(key, 1)])
             elif value == "geosphere":
-                cls._db.create_index([(key, pymongo.GEOSPHERE)])
+                cls._db.create_index([(f"{key}_loc", pymongo.GEOSPHERE)])
                 cls._location_var = key
+                admissible_vars.add(f"{key}_loc")
 
 
 class ModelCursor:
@@ -342,7 +369,11 @@ class ModelCursor:
         #No olvidar eliminar esta linea una vez implementado
 
         while self.cursor.alive: # Mientras tenga documentos pendientes
-            yield self.model(**next(self.cursor)) # ** lo pasa como kwargs al modelo
+            try:
+                documento = next(self.cursor)
+                yield self.model(**documento) # ** lo pasa como kwargs al modelo
+            except StopIteration:
+                break
 
 def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://localhost:27017/", db_name="abd", scope=globals()) -> None:
     """ 
@@ -408,60 +439,544 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
         )
 
 if __name__ == '__main__':
-    
-    # Inicializar base de datos y modelos con initApp
-    #TODO
+
+    # ============================================================
+    # INICIALIZACIÓN
+    # ============================================================
+
     initApp()
-    '''
-    #Ejemplo
-    m = Asistente(
-        nombre="Pablo", 
-        correo="pablo.mmartin@gmail.com", 
-        fecha='16/10/2006', 
-        dirección="av.mallorca, 25"
-        )
-    m.save()
-    m.nombre="Pedro"
-    print(m.nombre)
-    '''
-    # Hacer pruebas para comprobar que funciona correctamente el modelo
-    #TODO
-    # Crear modelo
+
+    print("\n" + "=" * 60)
+    print("INICIO DE PRUEBAS")
+    print("=" * 60)
+
+
+    # ============================================================
+    # RECINTO
+    # ============================================================
+
+    print("\n" + "-" * 60)
+    print("PRUEBAS DE RECINTO")
+    print("-" * 60)
+
+
+    # ============================================================
+    # PRUEBA 1 - CREACIÓN CORRECTA
+    # ============================================================
+
+    print("\n[1] Creación de Recinto")
+
     r = Recinto(
-        nombre="Recinto1",
-        direccion="Calle avenida",
+        nombre="recinto-test",
+        direccion="Calle de Jorge Juan, 99, Madrid, España",
         aforo=6700,
         zona={
             "A": 6000,
             "B": 700
-        }
+        },
+        servicios=["parking", "bar"]
     )
 
+    print("Nombre:", r.nombre)
+    print("Dirección:", r.direccion)
+    print("Aforo:", r.aforo)
+    print("Zona:", r.zona)
+    print("Servicios:", r.servicios)
 
-    # Asignar nuevo valor a variable admitida del objeto 
-    r.direccion = "Calle avenida 2"
+    if (
+        r.nombre == "recinto-test"
+        and r.direccion == "Calle de Jorge Juan, 99, Madrid, España"
+        and r.aforo == 6700
+        and r.zona == {"A": 6000, "B": 700}
+    ):
+        print("OK -> Recinto creado correctamente")
+    else:
+        print("ERROR -> datos incorrectos")
 
-    # Asignar nuevo valor a variable no admitida del objeto 
-    r.color = "Rojo"
 
-    # Guardar
+    # ============================================================
+    # PRUEBA 2 - ATRIBUTO NO ADMITIDO
+    # ============================================================
+
+    print("\n[2] Atributo no admitido")
+
+    r.color = "rojo"
+
+    if "color" not in r._data:
+        print("OK -> atributo no admitido ignorado")
+    else:
+        print("ERROR -> atributo no admitido almacenado")
+
+
+    # ============================================================
+    # PRUEBA 3 - MODIFICACIÓN DE ATRIBUTO
+    # ============================================================
+
+    print("\n[3] Modificación de atributo")
+
+    r.aforo = 7000
+
+    print("Aforo:", r.aforo)
+    print("Modificaciones:", r._modified_vars)
+
+    if r._modified_vars == {"aforo"}:
+        print("OK -> aforo marcado como modificado")
+    else:
+        print("ERROR -> modificaciones incorrectas")
+
+
+    # ============================================================
+    # PRUEBA 4 - MODIFICACIÓN DE VARIOS ATRIBUTOS
+    # ============================================================
+
+    print("\n[4] Modificación de varios atributos")
+
+    r.nombre = "recinto-test-2"
+    r.zona = {
+        "A": 5000,
+        "B": 2000
+    }
+
+    print("Modificaciones:", r._modified_vars)
+
+    if r._modified_vars == {"aforo", "nombre", "zona"}:
+        print("OK -> modificaciones correctas")
+    else:
+        print("ERROR -> modificaciones incorrectas")
+
+
+    # ============================================================
+    # PRUEBA 5 - SAVE
+    # ============================================================
+
+    print("\n[5] Guardar Recinto")
+
     r.save()
 
-    # Asignar nuevo valor a variable admitida del objeto
-    r.aforo = "7000"
+    print("ID:", r._data["_id"])
+    print("Datos:", r._data)
 
-    # Guardar
-    r.save()
+    if "_id" in r._data:
+        print("OK -> documento insertado")
+    else:
+        print("ERROR -> no se generó _id")
 
-    # Buscar nuevo documento con find
-    documento = Recinto.find({"nombre": "Recinto1"})
+    if len(r._modified_vars) == 0:
+        print("OK -> modificaciones limpiadas")
+    else:
+        print("ERROR -> modificaciones no limpiadas")
 
-    # Obtener primer documento
-    r = next(iter(documento), None)
-    print(f"{r.nombre} - aforo={r.aforo}")
 
-    # Modificar valor de variable admitida
+    # ============================================================
+    # PRUEBA 6 - GEOJSON
+    # ============================================================
+
+    print("\n[6] Comprobar GeoJSON")
+
+    if "direccion_loc" in r._data:
+
+        punto = r._data["direccion_loc"]
+
+        print("Punto:", punto)
+        print("Tipo:", punto["type"])
+        print("Coordenadas:", punto["coordinates"])
+
+        if punto["type"] == "Point":
+            print("OK -> es un Point")
+        else:
+            print("ERROR -> no es un Point")
+
+        if len(punto["coordinates"]) == 2:
+            print("Longitud:", punto["coordinates"][0])
+            print("Latitud:", punto["coordinates"][1])
+            print("OK -> coordenadas correctas")
+        else:
+            print("ERROR -> número de coordenadas incorrecto")
+
+    else:
+        print("ERROR -> no existe direccion_loc")
+
+
+    # ============================================================
+    # PRUEBA 7 - ACTUALIZACIÓN PARCIAL
+    # ============================================================
+
+    print("\n[7] Actualización parcial")
+
     r.aforo = 8000
 
-    # Guardar
+    print("Modificaciones antes de save():", r._modified_vars)
+
+    if r._modified_vars == {"aforo"}:
+        print("OK -> solo aforo será actualizado")
+    else:
+        print("ERROR -> modificaciones incorrectas")
+
     r.save()
+
+    if len(r._modified_vars) == 0:
+        print("OK -> modificaciones limpiadas")
+    else:
+        print("ERROR -> modificaciones no limpiadas")
+
+
+    # ============================================================
+    # PRUEBA 8 - ACTUALIZACIÓN DE DIRECCIÓN
+    # ============================================================
+
+    print("\n[8] Actualización de dirección")
+
+    coordenadas_antiguas = r._data["direccion_loc"]["coordinates"]
+
+    r.direccion = "Avenida de Concha Espina, 1, Madrid, España"
+
+    print("Nueva dirección:", r.direccion)
+    print("Modificaciones:", r._modified_vars)
+
+    if r._modified_vars == {"direccion"}:
+        print("OK -> dirección marcada como modificada")
+    else:
+        print("ERROR -> modificaciones incorrectas")
+
+    r.save()
+
+    coordenadas_nuevas = r._data["direccion_loc"]["coordinates"]
+
+    print("Coordenadas antiguas:", coordenadas_antiguas)
+    print("Coordenadas nuevas:", coordenadas_nuevas)
+
+    if coordenadas_antiguas != coordenadas_nuevas:
+        print("OK -> coordenadas actualizadas")
+    else:
+        print("ERROR -> coordenadas no actualizadas")
+
+
+    # ============================================================
+    # PRUEBA 9 - FIND
+    # ============================================================
+
+    print("\n[9] find()")
+
+    cursor = Recinto.find({
+        "nombre": "recinto-test-2"
+    })
+
+    encontrado = next(iter(cursor), None)
+
+    if encontrado is not None:
+        print("OK -> Recinto encontrado")
+        print("Nombre:", encontrado.nombre)
+        print("Aforo:", encontrado.aforo)
+        print("Dirección:", encontrado.direccion)
+    else:
+        print("ERROR -> Recinto no encontrado")
+
+
+    # ============================================================
+    # PRUEBA 10 - FIND DEVUELVE MODELO
+    # ============================================================
+
+    print("\n[10] Tipo devuelto por find()")
+
+    if isinstance(encontrado, Recinto):
+        print("OK -> find() devuelve un Recinto")
+    else:
+        print("ERROR -> find() no devuelve un Recinto")
+
+
+    # ============================================================
+    # PRUEBA 11 - MODIFICAR OBJETO OBTENIDO CON FIND
+    # ============================================================
+
+    print("\n[11] Modificar objeto obtenido con find()")
+
+    encontrado.aforo = 9000
+
+    print("Aforo:", encontrado.aforo)
+    print("Modificaciones:", encontrado._modified_vars)
+
+    if encontrado._modified_vars == {"aforo"}:
+        print("OK -> aforo marcado")
+    else:
+        print("ERROR -> modificaciones incorrectas")
+
+    encontrado.save()
+
+
+    # ============================================================
+    # PRUEBA 12 - ATRIBUTOS OBLIGATORIOS
+    # ============================================================
+
+    print("\n[12] Atributos obligatorios de Recinto")
+
+    try:
+
+        Recinto(
+            nombre="recinto-error",
+            direccion="Madrid",
+            aforo=1000
+        )
+
+        print("ERROR -> se permitió crear Recinto sin zona")
+
+    except AttributeError:
+        print("OK -> se rechazó Recinto sin zona")
+
+
+    # ============================================================
+    # PRUEBA 13 - ATRIBUTO DESCONOCIDO EN CONSTRUCTOR
+    # ============================================================
+
+    print("\n[13] Atributo desconocido en constructor")
+
+    try:
+
+        Recinto(
+            nombre="recinto-error",
+            direccion="Madrid",
+            aforo=1000,
+            zona={"A": 1000},
+            color="rojo"
+        )
+
+        print("ERROR -> se permitió atributo desconocido")
+
+    except AttributeError:
+        print("OK -> se rechazó atributo desconocido")
+
+
+    # ============================================================
+    # ARTISTA
+    # ============================================================
+
+    print("\n" + "-" * 60)
+    print("PRUEBAS DE ARTISTA")
+    print("-" * 60)
+
+
+    # ============================================================
+    # PRUEBA 14 - CREACIÓN CORRECTA
+    # ============================================================
+
+    print("\n[14] Creación de Artista")
+
+    artista = Artista(
+        nombre="Artista Test",
+        genero="Rock",
+        age=2020,
+        pais="España"
+    )
+
+    print("Nombre:", artista.nombre)
+    print("Género:", artista.genero)
+    print("Año:", artista.age)
+    print("País:", artista.pais)
+
+    if (
+        artista.nombre == "Artista Test"
+        and artista.genero == "Rock"
+        and artista.age == 2020
+        and artista.pais == "España"
+    ):
+        print("OK -> Artista creado correctamente")
+    else:
+        print("ERROR -> datos incorrectos")
+
+
+    # ============================================================
+    # PRUEBA 15 - ATRIBUTO NO ADMITIDO
+    # ============================================================
+
+    print("\n[15] Atributo no admitido en Artista")
+
+    artista.color = "rojo"
+
+    if "color" not in artista._data:
+        print("OK -> atributo no admitido ignorado")
+    else:
+        print("ERROR -> atributo no admitido almacenado")
+
+
+    # ============================================================
+    # PRUEBA 16 - MODIFICACIÓN
+    # ============================================================
+
+    print("\n[16] Modificación de Artista")
+
+    artista.genero = "Pop"
+
+    print("Género:", artista.genero)
+    print("Modificaciones:", artista._modified_vars)
+
+    if artista._modified_vars == {"genero"}:
+        print("OK -> género marcado como modificado")
+    else:
+        print("ERROR -> modificaciones incorrectas")
+
+
+    # ============================================================
+    # PRUEBA 17 - SAVE
+    # ============================================================
+
+    print("\n[17] Guardar Artista")
+
+    artista.save()
+
+    print("ID:", artista._data["_id"])
+    print("Datos:", artista._data)
+
+    if "_id" in artista._data:
+        print("OK -> Artista insertado")
+    else:
+        print("ERROR -> Artista no insertado")
+
+    if len(artista._modified_vars) == 0:
+        print("OK -> modificaciones limpiadas")
+    else:
+        print("ERROR -> modificaciones no limpiadas")
+
+
+    # ============================================================
+    # PRUEBA 18 - FIND DE ARTISTA
+    # ============================================================
+
+    print("\n[18] find() de Artista")
+
+    cursor_artista = Artista.find({
+        "nombre": "Artista Test"
+    })
+
+    artista_encontrado = next(iter(cursor_artista), None)
+
+    if artista_encontrado is not None:
+        print("OK -> Artista encontrado")
+        print("Nombre:", artista_encontrado.nombre)
+        print("Género:", artista_encontrado.genero)
+        print("País:", artista_encontrado.pais)
+    else:
+        print("ERROR -> Artista no encontrado")
+
+
+    # ============================================================
+    # PRUEBA 19 - FIND DEVUELVE MODELO
+    # ============================================================
+
+    print("\n[19] Tipo devuelto por find()")
+
+    if isinstance(artista_encontrado, Artista):
+        print("OK -> find() devuelve un Artista")
+    else:
+        print("ERROR -> find() no devuelve un Artista")
+
+
+    # ============================================================
+    # PRUEBA 20 - ATRIBUTOS OBLIGATORIOS DE ARTISTA
+    # ============================================================
+
+    print("\n[20] Atributos obligatorios de Artista")
+
+    try:
+
+        Artista(
+            nombre="Artista Incorrecto"
+        )
+
+        print("ERROR -> se permitió Artista sin género")
+
+    except AttributeError:
+        print("OK -> se rechazó Artista sin género")
+
+
+    # ============================================================
+    # PRUEBA 21 - ATRIBUTO DESCONOCIDO EN CONSTRUCTOR
+    # ============================================================
+
+    print("\n[21] Atributo desconocido en Artista")
+
+    try:
+
+        Artista(
+            nombre="Artista Incorrecto",
+            genero="Rock",
+            color="rojo"
+        )
+
+        print("ERROR -> se permitió atributo desconocido")
+
+    except AttributeError:
+        print("OK -> se rechazó atributo desconocido")
+
+
+    # ============================================================
+    # PRUEBA 22 - AGGREGATE
+    # ============================================================
+
+    print("\n[22] aggregate()")
+
+    resultados = list(Artista.aggregate([
+        {
+            "$match": {
+                "nombre": "Artista Test"
+            }
+        }
+    ]))
+
+    print("Resultados:", resultados)
+
+    if len(resultados) > 0:
+        print("OK -> aggregate() devuelve resultados")
+    else:
+        print("ERROR -> aggregate() no devuelve resultados")
+
+
+    # ============================================================
+    # PRUEBA 23 - DELETE RECINTO
+    # ============================================================
+
+    print("\n[23] delete() de Recinto")
+
+    id_recinto = r._data["_id"]
+
+    r.delete()
+
+    comprobacion = Recinto.find({
+        "_id": id_recinto
+    })
+
+    eliminado = next(iter(comprobacion), None)
+
+    if eliminado is None:
+        print("OK -> Recinto eliminado correctamente")
+    else:
+        print("ERROR -> Recinto no eliminado")
+
+
+    # ============================================================
+    # PRUEBA 24 - DELETE ARTISTA
+    # ============================================================
+
+    print("\n[24] delete() de Artista")
+
+    id_artista = artista._data["_id"]
+
+    artista.delete()
+
+    comprobacion = Artista.find({
+        "_id": id_artista
+    })
+
+    eliminado = next(iter(comprobacion), None)
+
+    if eliminado is None:
+        print("OK -> Artista eliminado correctamente")
+    else:
+        print("ERROR -> Artista no eliminado")
+
+
+    # ============================================================
+    # FIN
+    # ============================================================
+
+    print("\n" + "=" * 60)
+    print("FIN DE TODAS LAS PRUEBAS")
+    print("=" * 60)
