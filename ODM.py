@@ -38,7 +38,7 @@ def getLocationPoint(address: str) -> Point:
             #TODO
             # Es necesario proporcionar un user_agent para utilizar la API
             # Utilizar un nombre aleatorio para el user_agent
-            location = Nominatim(user_agent="Mi-Nombre-Aleatorio").geocode(address) # location vale None si no se ha encontrado la dirección, en caso contrario, valdrá un objeto de geopy
+            location = Nominatim(user_agent="compis").geocode(address) # location vale None si no se ha encontrado la dirección, en caso contrario, valdrá un objeto de geopy
         except GeocoderTimedOut:
             # Puede lanzar una excepcion si se supera el tiempo de espera
             # Volver a intentarlo
@@ -121,7 +121,7 @@ class Model:
         # 1. "Todos los atributos que me han enviado están entre los atributos permitidos + obligatorios."
         # 2. "¿Todos los atributos obligatorios están entre los atributos recibidos?"
 
-        if (not self._admissible_vars.union(self._required_vars)) or \
+        if (not set(kwargs).issubset(self._admissible_vars.union(self._required_vars))) or \
             (not self._required_vars.issubset(set(kwargs))):
             raise AttributeError("[-] Los atributos ingresados no son compatible con el modelo")
 
