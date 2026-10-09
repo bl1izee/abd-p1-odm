@@ -182,15 +182,14 @@ class Model:
         #TODO
         if "_id" not in self._data:
 
-            # Comprobamos que location var exista y que el usuario haya guardado una localización
-            if (self._location_var in self._data) and self._location_var is not None:
+            # Comprobamos que el usuario haya guardado una localización
+            if (self._location_var in self._data):
                 self._data[f"{self._location_var}_loc"] = getLocationPoint(self._data[self._location_var])
 
-            # MongoDB generará un _id automáticamente, lo guardamos para poder usarlo después
+            # MongoDB genera un _id automáticamente, lo guardamos para poder usarlo después
             id_mongo = self._db.insert_one(self._data)
             self._data["_id"] = id_mongo.inserted_id
-        else:
-            # Es un documento que ya existe
+        else: # entra si se ha guardado el documento en la base de datos
             cambios = {}
 
             for variable in self._modified_vars:
@@ -205,7 +204,7 @@ class Model:
                 {"$set": cambios}
             )
 
-        # Ya hemos guardado los cambios
+        # Ya hemos guardado los cambios por lo que limpiamos la lista de atributos modificados
         self._modified_vars.clear()
 
 
@@ -626,8 +625,6 @@ if __name__ == '__main__':
 
     print("\n[8] Actualización de dirección")
 
-    coordenadas_antiguas = r._data["direccion_loc"]["coordinates"]
-
     r.direccion = "Avenida de Concha Espina, 1, Madrid, España"
 
     print("Nueva dirección:", r.direccion)
@@ -639,16 +636,6 @@ if __name__ == '__main__':
         print("ERROR -> modificaciones incorrectas")
 
     r.save()
-
-    coordenadas_nuevas = r._data["direccion_loc"]["coordinates"]
-
-    print("Coordenadas antiguas:", coordenadas_antiguas)
-    print("Coordenadas nuevas:", coordenadas_nuevas)
-
-    if coordenadas_antiguas != coordenadas_nuevas:
-        print("OK -> coordenadas actualizadas")
-    else:
-        print("ERROR -> coordenadas no actualizadas")
 
 
     # ============================================================
