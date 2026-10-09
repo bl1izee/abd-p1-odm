@@ -437,6 +437,9 @@ def initApp(definitions_path: str = "./models.yml", mongodb_uri="mongodb://local
             admissible_vars=set(valor["admissible_vars"])
         )
 
+'''
+No hemos añadido ninguna documento a las colecciones ya que ingresamos directamente los datos en tiempo de ejecución para siumalr como sería el funcionamiento en una producción real
+'''
 if __name__ == '__main__':
 
     # ============================================================
